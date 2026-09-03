@@ -11,21 +11,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#1b2027;
-  --ink-soft:#4a5060;
-  --paper:#eae6dc;
-  --paper-raised:#f5f2ea;
-  --paper-sunken:#ddd8cb;
-  --line:#c9c3b3;
-  --line-strong:#a89f8a;
+  --ink:#132920;
+  --ink-soft:#3f5a4d;
+  --paper:#e9e6da;
+  --paper-raised:#f5f3ea;
+  --paper-sunken:#dbdccb;
+  --line:#c2c9ab;
+  --line-strong:#93a184;
   --brass:#a9822f;
   --brass-soft:#cba658;
   --crimson:#a23b3b;
   --crimson-soft:#c96a5c;
-  --moss:#5c7a56;
+  --moss:#4f8a5b;
   --sky:#4d6f8a;
-  --shadow:0 1px 2px rgba(27,32,39,.08), 0 4px 12px rgba(27,32,39,.06);
-  --shadow-lg:0 8px 24px rgba(27,32,39,.14), 0 2px 6px rgba(27,32,39,.08);
+  --shadow:0 1px 2px rgba(15,42,31,.10), 0 4px 12px rgba(15,42,31,.08);
+  --shadow-lg:0 8px 24px rgba(15,42,31,.18), 0 2px 6px rgba(15,42,31,.10);
   --radius:10px;
   --radius-sm:6px;
   --font-display:'Fraunces',Georgia,serif;
@@ -188,7 +188,7 @@ table.datatable tr:hover td{background:var(--paper-sunken);}
 .binder-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
 .binder-pagelabel{font-family:var(--font-display);font-size:17px;}
 .binder-page{
-  background:linear-gradient(180deg,#20242c,#161920);border-radius:14px;padding:16px;box-shadow:var(--shadow-lg);
+  background:linear-gradient(180deg,#1c3a2c,#0f241b);border-radius:14px;padding:16px;box-shadow:var(--shadow-lg);
 }
 .binder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .pocket{
@@ -282,10 +282,49 @@ table.datatable tr:hover td{background:var(--paper-sunken);}
 
 .hidden{display:none !important;}
 
+.globalbar{padding:10px 20px;background:var(--paper);border-bottom:1px solid var(--line);position:relative;z-index:50;}
+.globalbar .gs-wrap{max-width:520px;margin:0 auto;}
+@media (max-width:860px){.globalbar{padding:8px 14px;}}
+.gs-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-lg);max-height:420px;overflow-y:auto;z-index:60;}
+.gs-dropdown.open{display:block;}
+.gs-row{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--line);}
+.gs-row:last-child{border-bottom:none;}
+.gs-row:hover{background:var(--paper-sunken);}
+.gs-thumb{width:38px;height:38px;flex-shrink:0;border-radius:var(--radius-sm);overflow:hidden;background:var(--paper-sunken);}
+.gs-info{flex:1;min-width:0;}
+.gs-nm{font-family:var(--font-display);font-weight:600;font-size:13.5px;display:flex;align-items:baseline;gap:6px;}
+.gs-dex{font-size:10px;color:var(--ink-soft);font-weight:400;font-variant-numeric:tabular-nums;}
+.gs-tax{font-size:11px;color:var(--ink-soft);margin-top:1px;}
+.gs-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.gs-empty{padding:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;}
+.imgwrap{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--paper-sunken);}
+.imgwrap img{width:100%;height:100%;object-fit:contain;position:relative;z-index:1;}
+.imgwrap.pocket-img img{object-fit:cover;}
+.imgfallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);opacity:.4;}
+.imgfallback svg{width:38%;height:38%;}
+.cardrow-art{width:52px;height:52px;flex-shrink:0;border-radius:var(--radius-sm);overflow:hidden;}
+.spcard-art{width:100%;aspect-ratio:1/1;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:2px;}
+.species-hero{width:76px;height:76px;flex-shrink:0;border-radius:50%;overflow:hidden;background:var(--paper-sunken);border:2px solid var(--line-strong);}
+.pocket-art{position:absolute;inset:0;}
+.pocket-overlay{position:relative;z-index:2;display:flex;flex-direction:column;flex:1;min-height:0;background:linear-gradient(180deg, rgba(245,243,234,.12) 0%, rgba(245,243,234,.55) 55%, rgba(245,243,234,.92) 100%);}
+.pocket.missing .pocket-overlay{background:none;}
+.taxmini{font-size:9px;color:var(--ink-soft);margin-top:1px;}
+.taxchip{background:var(--paper-sunken);color:var(--ink-soft);}
+.chip.sm{padding:3px 8px;font-size:10.5px;}
+
 </style>
 </head>
 <body>
 <div id="app">
+  <div class="globalbar">
+    <div class="gs-wrap" id="globalSearchWrap">
+      <div class="searchbar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+        <input type="search" id="globalSearch" placeholder="Search any Pokémon — from anywhere in the app…" autocomplete="off">
+      </div>
+      <div class="gs-dropdown" id="globalSearchDropdown"></div>
+    </div>
+  </div>
   <div class="shell">
     <nav class="sidebar">
       <div class="brand"><span class="mark"></span> Kyle's Deck</div>
@@ -352,6 +391,10 @@ const ICONS = {
   trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg>',
   edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
   empty:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 7l3-4h12l3 4"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
+  extras:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="14" height="14" rx="2"/><path d="M7 7V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-2"/></svg>',
+  cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 18a4.5 4.5 0 0 1-.4-9A5.5 5.5 0 0 1 17.4 8 4 4 0 0 1 17 18H7z"/></svg>',
+  cloudOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 18a4.5 4.5 0 0 1-.4-9 5.5 5.5 0 0 1 1.7-2.9"/><path d="M17.4 8A4 4 0 0 1 17 18H8"/><line x1="2" y1="2" x2="22" y2="22"/></svg>',
+  photo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="M21 15l-5-5-11 11"/></svg>',
 };
 
 /* ---------------- static data lookups (built once) ---------------- */
@@ -401,6 +444,22 @@ let STATE = {
   overrides: loadJSON(LS_KEYS.overrides, {}),     // lowercased raw name -> species name
   settings: loadJSON(LS_KEYS.settings, { currency:'USD' }),
 };
+if(!STATE.settings.cloudSync) STATE.settings.cloudSync = { enabled:false, syncCode:'', config:null };
+
+/* ---------------- Pokémon artwork (official art, hotlinked — never stored locally) ---------------- */
+function speciesImageUrl(s){
+  if(!s || !s.dex || typeof s.dex !== 'number') return null;
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${s.dex}.png`;
+}
+// Wrapper + fallback icon behind the <img>; if the artwork 404s (e.g. species
+// too new for the sprite repo) the broken image just hides and the icon shows.
+function speciesImgTag(s, cls){
+  const url = speciesImageUrl(s);
+  return `<div class="imgwrap ${cls||''}">
+    <div class="imgfallback">${ICONS.photo}</div>
+    ${url ? `<img src="${url}" alt="${esc(s.name)}" loading="lazy" onerror="this.style.display='none'">` : ''}
+  </div>`;
+}
 
 function persist(part){
   if(part==='collection') saveJSON(LS_KEYS.collection, STATE.collection);
@@ -408,6 +467,10 @@ function persist(part){
   else if(part==='history') saveJSON(LS_KEYS.history, STATE.history);
   else if(part==='overrides') saveJSON(LS_KEYS.overrides, STATE.overrides);
   else if(part==='settings') saveJSON(LS_KEYS.settings, STATE.settings);
+  // Push to the cloud (if connected) whenever real data changes. Settings
+  // writes are excluded so that pushToCloud() recording its own
+  // lastPushedAt timestamp (a settings write) can't trigger itself again.
+  if(part!=='settings' && STATE.settings.cloudSync && STATE.settings.cloudSync.enabled) scheduleCloudPush();
 }
 
 /* ---------------- derived collection stats (recomputed on demand, cheap) ---------------- */
@@ -441,6 +504,65 @@ function cardsForSpecies(name){
 }
 function speciesOwnedQty(name){
   return cardsForSpecies(name).reduce((s,c)=>s+c.quantity,0);
+}
+
+/* ============================================================
+   Shared "find a Pokémon" search — powers the always-visible
+   global search bar plus the inline searches on the Binder and
+   Extras Binder pages. Every instance shares this same matching
+   + result-row + wiring logic.
+   ============================================================ */
+function speciesSearchMatches(q, limit){
+  limit = limit || 8;
+  if(!q || !q.trim()) return [];
+  const nq = norm(q);
+  const scored = [];
+  for(const s of SPECIES){
+    const n = norm(s.name);
+    let score = -1;
+    if(n === nq) score = 0;
+    else if(n.startsWith(nq)) score = 1;
+    else if(n.includes(nq)) score = 2;
+    else if(norm(s.evoFamily||'').includes(nq)) score = 3;
+    if(score >= 0) scored.push({ s, score });
+  }
+  scored.sort((a,b) => a.score - b.score || (a.s.dex??99999) - (b.s.dex??99999));
+  return scored.slice(0, limit).map(x => x.s);
+}
+function speciesResultRow(s){
+  const qty = speciesOwnedQty(s.name);
+  const owned = qty > 0;
+  const slot = binderSlotBySpecies.get(s.name);
+  const taxLabel = s.subcategory && s.subcategory!=='—' ? s.subcategory : s.category;
+  return `
+    <div class="gs-row" data-nav-species="${esc(s.name)}">
+      <div class="gs-thumb">${speciesImgTag(s,'gs-thumb-img')}</div>
+      <div class="gs-info">
+        <div class="gs-nm">${esc(s.name)}<span class="gs-dex">${s.dex ? '#'+String(s.dex).padStart(4,'0') : ''}</span></div>
+        <div class="gs-tax">${esc(taxLabel)}</div>
+      </div>
+      <div class="gs-meta">
+        ${owned ? `<span class="badge owned">Owned ×${qty}</span>` : `<span class="badge missing">Missing</span>`}
+        ${slot ? `<span class="chip sm" data-goto-binder="${slot.page}">${ICONS.binder} Pg ${slot.page}</span>` : `<span class="chip sm" style="opacity:.5;">Not in binder</span>`}
+      </div>
+    </div>`;
+}
+function wireSpeciesSearchInput(inputEl, dropdownEl){
+  if(!inputEl || !dropdownEl) return;
+  const update = () => {
+    const q = inputEl.value;
+    if(!q || !q.trim()){ dropdownEl.innerHTML=''; dropdownEl.classList.remove('open'); return; }
+    const matches = speciesSearchMatches(q, 8);
+    dropdownEl.innerHTML = matches.length
+      ? matches.map(speciesResultRow).join('')
+      : `<div class="gs-empty">No species match “${esc(q)}”</div>`;
+    dropdownEl.classList.add('open');
+  };
+  inputEl.addEventListener('input', debounce(update, 120));
+  inputEl.addEventListener('focus', update);
+}
+function closeAllSearchDropdowns(){
+  $$('.gs-dropdown.open').forEach(d => d.classList.remove('open'));
 }
 
 /* ============================================================
@@ -682,6 +804,7 @@ const ROUTES = [
   { id:'pokedex', label:'Pokédex', icon:'pokedex' },
   { id:'taxonomy', label:'Taxonomy', icon:'taxonomy' },
   { id:'binder', label:'Binder', icon:'binder' },
+  { id:'extras', label:'Extras Binder', icon:'extras' },
   { id:'import', label:'Import', icon:'import' },
   { id:'history', label:'Import History', icon:'history' },
   { id:'settings', label:'Settings', icon:'settings' },
@@ -706,9 +829,24 @@ function renderShell(){
   $('#tabbarNav').innerHTML = navHTML(id, true);
 }
 
+let LAST_ROUTE_KEY = null;
 function render(){
-  renderShell();
   const { id, args } = currentRoute();
+  const routeKey = id + '|' + args.join('/');
+  const isNewRoute = routeKey !== LAST_ROUTE_KEY;
+  LAST_ROUTE_KEY = routeKey;
+
+  // Preserve focus + cursor position across the innerHTML rebuild below, so
+  // typing in a search box doesn't dismiss the on-screen keyboard on every
+  // keystroke (the old behaviour: re-render destroyed and recreated the
+  // input element each time, which blurs it).
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const canRestore = !!(activeId && active.tagName && (active.tagName==='INPUT' || active.tagName==='TEXTAREA'));
+  const selStart = canRestore && typeof active.selectionStart === 'number' ? active.selectionStart : null;
+  const selEnd = canRestore && typeof active.selectionEnd === 'number' ? active.selectionEnd : null;
+
+  renderShell();
   const main = $('#main');
   const renderers = {
     dashboard: renderDashboard,
@@ -716,25 +854,38 @@ function render(){
     pokedex: args[0] ? renderSpeciesDetail : renderPokedex,
     taxonomy: renderTaxonomy,
     binder: renderBinder,
+    extras: renderExtras,
     import: renderImport,
     history: renderHistory,
     settings: renderSettings,
   };
   const fn = renderers[id] || renderDashboard;
   main.innerHTML = fn(args);
-  main.scrollTop = 0;
+  if(isNewRoute) main.scrollTop = 0;
   wireScreenEvents(id, args);
+
+  if(canRestore){
+    const el = document.getElementById(activeId);
+    if(el && (el.tagName==='INPUT' || el.tagName==='TEXTAREA')){
+      el.focus({preventScroll:true});
+      if(selStart!=null && el.setSelectionRange){ try{ el.setSelectionRange(selStart, selEnd); }catch(e){} }
+    }
+  }
 }
 
 window.addEventListener('hashchange', render);
 
 document.addEventListener('click', (e) => {
+  if(!e.target.closest('.gs-wrap')) closeAllSearchDropdowns();
+
   const navBtn = e.target.closest('[data-nav]');
   if(navBtn){ location.hash = '#/' + navBtn.dataset.nav; return; }
   const closeBtn = e.target.closest('[data-action="close-modal"]');
   if(closeBtn){ closeModal(); return; }
+  const gotoBinder = e.target.closest('[data-goto-binder]');
+  if(gotoBinder){ closeAllSearchDropdowns(); location.hash = '#/binder/' + gotoBinder.dataset.gotoBinder; return; }
   const spNav = e.target.closest('[data-nav-species]');
-  if(spNav){ location.hash = '#/pokedex/' + encodeURIComponent(spNav.dataset.navSpecies); return; }
+  if(spNav){ closeAllSearchDropdowns(); location.hash = '#/pokedex/' + encodeURIComponent(spNav.dataset.navSpecies); return; }
   const taxNav = e.target.closest('[data-nav-taxonomy]');
   if(taxNav){ location.hash = '#/taxonomy/' + taxNav.dataset.navTaxonomy; return; }
   const binNav = e.target.closest('[data-nav-binder]');
@@ -765,6 +916,13 @@ function wireScreenEvents(routeId){
     $('#binderPrev')?.addEventListener('click', () => { location.hash = '#/binder/' + (binderPage-1); });
     $('#binderNext')?.addEventListener('click', () => { location.hash = '#/binder/' + (binderPage+1); });
     $('#binderGo')?.addEventListener('click', () => { const v = parseInt($('#binderJump').value,10)||1; location.hash = '#/binder/' + v; });
+    wireSpeciesSearchInput($('#binderSearch'), $('#binderSearchDropdown'));
+  }
+  else if(routeId === 'extras'){
+    $('#extrasSearch')?.addEventListener('input', debounce(e => { extrasFilter.q = e.target.value; extrasPage = 1; render(); }, 220));
+    $('#extrasPrev')?.addEventListener('click', () => { extrasPage = Math.max(1, extrasPage-1); render(); });
+    $('#extrasNext')?.addEventListener('click', () => { extrasPage = extrasPage+1; render(); });
+    $('#extrasGo')?.addEventListener('click', () => { extrasPage = parseInt($('#extrasJump').value,10)||1; render(); });
   }
   else if(routeId === 'import'){
     const dz = $('#dropzone');
@@ -790,11 +948,26 @@ function wireScreenEvents(routeId){
     restoreInput?.addEventListener('change', e => { if(e.target.files[0]) restoreBackup(e.target.files[0]); });
     $('#resetAllBtn')?.addEventListener('click', () => {
       confirmAction('Erase all cards, binder picks, and import history? This cannot be undone — export a backup first if you want to keep it.', () => {
-        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{currency:'USD'} };
+        if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot=null; }
+        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{ currency:'USD', cloudSync:{enabled:false,syncCode:'',config:null} } };
         Object.keys(LS_KEYS).forEach(k => persist(k));
         toast('All data erased.');
         location.hash = '#/dashboard'; render();
       });
+    });
+    $('#csConnectBtn')?.addEventListener('click', async () => {
+      const code = $('#csCode').value;
+      const cfgText = $('#csConfig').value;
+      const btn = $('#csConnectBtn');
+      btn.disabled = true; btn.textContent = 'Connecting…';
+      await connectCloudSync(cfgText, code);
+      render();
+    });
+    $('#csHelpBtn')?.addEventListener('click', showCloudSyncHelp);
+    $('#csPushBtn')?.addEventListener('click', async () => { await pushToCloud(); toast('Pushed this device\'s data to the cloud.'); });
+    $('#csPullBtn')?.addEventListener('click', async () => { await pullThenWatch(); render(); });
+    $('#csDisconnectBtn')?.addEventListener('click', () => {
+      confirmAction('Turn off cloud sync? Your data stays right here on this device either way — nothing is deleted.', disconnectCloudSync);
     });
   }
 }
@@ -802,6 +975,7 @@ function wireScreenEvents(routeId){
 /* ============================================================
    Init
    ============================================================ */
+wireSpeciesSearchInput($('#globalSearch'), $('#globalSearchDropdown'));
 render();
 
 /* ============================================================
@@ -942,11 +1116,14 @@ function renderCollection(){
 function renderCardRow(c){
   const sp = c.species ? speciesByName.get(c.species) : null;
   const isPick = c.species && STATE.picks[c.species] === c.id;
+  const taxLabel = sp ? (sp.subcategory && sp.subcategory!=='—' ? sp.subcategory : sp.category) : null;
   return `
     <div class="cardrow" data-card="${c.id}">
+      <div class="cardrow-art">${sp ? speciesImgTag(sp,'cardrow-img') : `<div class="imgfallback">${ICONS.photo}</div>`}</div>
       <div class="info">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-family:var(--font-display);font-weight:600;">${esc(c.species || c.productName)}</span>
+          ${taxLabel ? `<span class="chip sm taxchip">${esc(taxLabel)}</span>` : ''}
           ${!c.species ? `<span class="badge review">Needs species</span>` : ''}
           ${isPick ? `<span class="badge pick">★ Binder pick</span>` : ''}
         </div>
@@ -1082,6 +1259,7 @@ function renderSpeciesCard(s){
   const pick = !!STATE.picks[s.name];
   return `
     <div class="spcard ${owned?'':'missing'}" data-nav-species="${esc(s.name)}">
+      <div class="spcard-art">${speciesImgTag(s,'spcard-img')}</div>
       <div class="dex">${s.dex ? '#'+String(s.dex).padStart(4,'0') : 'Gen 10'}</div>
       <div class="nm">${esc(s.name)}</div>
       <div class="tax">${esc(s.subcategory && s.subcategory!=='—' ? s.subcategory : s.category)}</div>
@@ -1104,9 +1282,12 @@ function renderSpeciesDetail(args){
   return `
     <div class="crumbs"><span class="c" data-nav="pokedex">Pokédex</span> <span>›</span> <span>${esc(s.name)}</span></div>
     <div class="pagehead">
-      <div>
-        <h1>${esc(s.name)}</h1>
-        <div class="sub">${s.dex ? '#'+String(s.dex).padStart(4,'0') : 'Generation 10 — revealed starter'} · ${esc(displayGeneration(s.generation))}</div>
+      <div style="display:flex;gap:16px;align-items:center;">
+        <div class="species-hero">${speciesImgTag(s,'species-hero-img')}</div>
+        <div>
+          <h1>${esc(s.name)}</h1>
+          <div class="sub">${s.dex ? '#'+String(s.dex).padStart(4,'0') : 'Generation 10 — revealed starter'} · ${esc(displayGeneration(s.generation))}</div>
+        </div>
       </div>
       ${slot ? `<button class="btn" data-nav-binder="${slot.page}">${ICONS.binder} View in binder — page ${slot.page}</button>` : ''}
     </div>
@@ -1225,6 +1406,12 @@ function renderBinder(args){
     <div class="pagehead">
       <div><h1>Binder</h1><div class="sub">3 × 3 physical layout · ${fmtInt(BINDER.length)} pockets across ${BINDER_MAX_PAGE} pages</div></div>
     </div>
+    <div class="toolbar">
+      <div class="gs-wrap" style="max-width:300px;">
+        <div class="searchbar">${ICONS.search}<input type="search" id="binderSearch" placeholder="Find a Pokémon's page…" autocomplete="off"></div>
+        <div class="gs-dropdown" id="binderSearchDropdown"></div>
+      </div>
+    </div>
     <div class="binder-toolbar">
       <button class="btn" id="binderPrev" ${binderPage<=1?'disabled':''}>${ICONS.left} Prev</button>
       <div style="display:flex;align-items:center;gap:10px;">
@@ -1244,12 +1431,111 @@ function renderPocket(slot){
   const qty = speciesOwnedQty(slot.display);
   const owned = qty>0;
   const pick = !!STATE.picks[slot.display];
+  const sp = speciesByName.get(slot.display);
+  const taxLabel = sp ? (sp.subcategory && sp.subcategory!=='—' ? sp.subcategory : sp.category) : '';
   const cls = ['pocket', owned?'owned':'missing', pick?'haspick':''].join(' ').trim();
   return `
     <div class="${cls}" data-nav-species="${esc(slot.display)}">
-      <div class="top"><span class="dexno">${slot.dex && !String(slot.dex).startsWith('TBD') ? '#'+String(slot.dex).padStart(4,'0') : 'G10'}</span></div>
-      <div class="body"><div class="nm">${esc(slot.display)}</div></div>
-      <div class="foot">${owned?'<span class="dot owned"></span>':''}${pick?'<span class="dot pick"></span>':''}</div>
+      ${owned && sp ? `<div class="pocket-art">${speciesImgTag(sp,'pocket-img')}</div>` : ''}
+      <div class="pocket-overlay">
+        <div class="top"><span class="dexno">${slot.dex && !String(slot.dex).startsWith('TBD') ? '#'+String(slot.dex).padStart(4,'0') : 'G10'}</span></div>
+        <div class="body"><div class="nm">${esc(slot.display)}</div>${owned && taxLabel ? `<div class="taxmini">${esc(taxLabel)}</div>` : ''}</div>
+        <div class="foot">${owned?'<span class="dot owned"></span>':''}${pick?'<span class="dot pick"></span>':''}</div>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   Extras Binder — a second binder for every copy beyond each
+   species' main-binder pick (duplicates, and any card for a
+   species that isn't the chosen pick). Derived on the fly from
+   the collection + picks, grouped and ordered the same way the
+   main binder's taxonomy is, and auto-paginated 3×3 per page.
+   ============================================================ */
+const taxOrderIndex = new Map();
+TAXONOMY_TREE.forEach((t,i)=>{
+  const key = [t.group,t.category,t.subcategory,t.subsubcategory].join('|');
+  if(!taxOrderIndex.has(key)) taxOrderIndex.set(key, i);
+});
+function speciesTaxKey(s){ return [s.group,s.category,s.subcategory,s.subsubcategory].join('|'); }
+
+function extrasBySpecies(){
+  const map = new Map(); // speciesName -> extra copy count
+  STATE.collection.forEach(c => {
+    if(!c.species) return;
+    const isPick = STATE.picks[c.species] === c.id;
+    const extra = isPick ? Math.max(0, (c.quantity||0) - 1) : (c.quantity||0);
+    if(extra > 0) map.set(c.species, (map.get(c.species)||0) + extra);
+  });
+  return map;
+}
+
+let extrasFilter = { q:'' };
+let extrasPage = 1;
+function renderExtras(){
+  const extraMap = extrasBySpecies();
+  let list = SPECIES.filter(s => extraMap.has(s.name));
+  if(extrasFilter.q){
+    const q = norm(extrasFilter.q);
+    list = list.filter(s => norm(s.name).includes(q));
+  }
+  list.sort((a,b) => {
+    const ia = taxOrderIndex.has(speciesTaxKey(a)) ? taxOrderIndex.get(speciesTaxKey(a)) : 99999;
+    const ib = taxOrderIndex.has(speciesTaxKey(b)) ? taxOrderIndex.get(speciesTaxKey(b)) : 99999;
+    if(ia !== ib) return ia - ib;
+    return (a.dex??99999) - (b.dex??99999);
+  });
+
+  const cells = [];
+  let lastGroup = null;
+  list.forEach(s => {
+    if(s.group !== lastGroup){ cells.push({ type:'label', display:s.group }); lastGroup = s.group; }
+    cells.push({ type:'POKÉMON', species:s });
+  });
+  const totalPages = Math.max(1, Math.ceil(cells.length/9));
+  extrasPage = Math.max(1, Math.min(totalPages, extrasPage||1));
+  const startIdx = (extrasPage-1)*9;
+  const pageCells = cells.slice(startIdx, startIdx+9);
+  while(pageCells.length < 9) pageCells.push(null);
+
+  const totalExtraCopies = Array.from(extraMap.values()).reduce((a,b)=>a+b,0);
+
+  return `
+    <div class="pagehead">
+      <div><h1>Extras Binder</h1><div class="sub">${fmtInt(totalExtraCopies)} extra cards across ${fmtInt(list.length)} species · duplicates &amp; copies not used as your main binder pick</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="searchbar">${ICONS.search}<input type="search" id="extrasSearch" placeholder="Filter extras by Pokémon name…" value="${esc(extrasFilter.q)}"></div>
+    </div>
+    ${list.length===0 ? `<div class="emptystate card">${ICONS.empty}<h3>No extras yet</h3><p>Copies you own beyond your binder pick — or cards for a species that isn't your pick — show up here automatically.</p></div>` : `
+    <div class="binder-toolbar">
+      <button class="btn" id="extrasPrev" ${extrasPage<=1?'disabled':''}>${ICONS.left} Prev</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="binder-pagelabel">Page ${extrasPage} of ${totalPages}</span>
+        <div class="pager"><input type="number" id="extrasJump" min="1" max="${totalPages}" value="${extrasPage}"><button class="btn sm" id="extrasGo">Go</button></div>
+      </div>
+      <button class="btn" id="extrasNext" ${extrasPage>=totalPages?'disabled':''}>Next ${ICONS.right}</button>
+    </div>
+    <div class="binder-page"><div class="binder-grid">${pageCells.map(c=>renderExtraPocket(c, extraMap)).join('')}</div></div>
+    `}
+  `;
+}
+function renderExtraPocket(cell, extraMap){
+  if(!cell) return `<div class="pocket empty"></div>`;
+  if(cell.type === 'label'){
+    return `<div class="pocket label"><div class="lv">GROUP</div><div class="nm">${esc(cell.display)}</div></div>`;
+  }
+  const s = cell.species;
+  const extraQty = extraMap.get(s.name) || 0;
+  const taxLabel = s.subcategory && s.subcategory!=='—' ? s.subcategory : s.category;
+  return `
+    <div class="pocket owned" data-nav-species="${esc(s.name)}">
+      <div class="pocket-art">${speciesImgTag(s,'pocket-img')}</div>
+      <div class="pocket-overlay">
+        <div class="top"><span class="dexno">${s.dex ? '#'+String(s.dex).padStart(4,'0') : 'G10'}</span></div>
+        <div class="body"><div class="nm">${esc(s.name)}</div>${taxLabel ? `<div class="taxmini">${esc(taxLabel)}</div>` : ''}</div>
+        <div class="foot"><span class="badge dup">×${extraQty} extra</span></div>
+      </div>
     </div>`;
 }
 
@@ -1445,14 +1731,167 @@ function renderHistory(){
 }
 
 /* ============================================================
+   Cloud sync — optional, free (Firebase Firestore). Nothing here
+   runs unless the person pastes in their own Firebase config and
+   turns it on; the app is fully local/offline by default.
+   ============================================================ */
+let firebaseApp = null, firestoreDb = null, unsubscribeSnapshot = null;
+let cloudSyncBusy = false, cloudPushTimer = null;
+
+function cloudDocRef(){
+  if(!firestoreDb || !STATE.settings.cloudSync || !STATE.settings.cloudSync.syncCode) return null;
+  const code = norm(STATE.settings.cloudSync.syncCode).replace(/\s+/g,'-');
+  return firestoreDb.collection('kylesDeckSync').doc(code);
+}
+function loadFirebaseSdk(){
+  if(window.firebase && window.firebase.firestore) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const s1 = document.createElement('script');
+    s1.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js';
+      s2.onload = () => resolve();
+      s2.onerror = () => reject(new Error('could not load the cloud sync library — check your connection'));
+      document.head.appendChild(s2);
+    };
+    s1.onerror = () => reject(new Error('could not load the cloud sync library — check your connection'));
+    document.head.appendChild(s1);
+  });
+}
+async function connectCloudSync(configText, syncCode){
+  let config;
+  try{ config = JSON.parse(configText); }
+  catch(e){ toast('That doesn\'t look like valid Firebase config JSON — paste the whole { … } object.'); return false; }
+  if(!syncCode || !syncCode.trim()){ toast('Enter a sync code first — any private word or phrase works, as long as every device uses the same one.'); return false; }
+  try{
+    await loadFirebaseSdk();
+    firebaseApp = (window.firebase.apps && window.firebase.apps.length) ? window.firebase.app() : window.firebase.initializeApp(config);
+    firestoreDb = window.firebase.firestore();
+  }catch(e){
+    toast('Could not connect: ' + e.message);
+    return false;
+  }
+  STATE.settings.cloudSync = { enabled:true, syncCode: syncCode.trim(), config, lastPushedAt: STATE.settings.cloudSync?.lastPushedAt || 0 };
+  persist('settings');
+  try{
+    await pullThenWatch();
+  }catch(e){
+    toast('Connected, but the first sync failed — will keep retrying: ' + e.message);
+  }
+  toast('Cloud sync connected.');
+  return true;
+}
+async function pullThenWatch(){
+  const ref = cloudDocRef();
+  if(!ref) return;
+  try{
+    const snap = await ref.get();
+    if(snap.exists){
+      const remote = snap.data();
+      if((remote.updatedAt||0) > (STATE.settings.cloudSync.lastPushedAt||0)) applyRemoteState(remote);
+    } else {
+      await pushToCloud();
+    }
+  }catch(e){
+    toast('Cloud sync: could not reach the server — will keep trying in the background.');
+  }
+  watchCloud();
+}
+function applyRemoteState(remote){
+  STATE.collection = remote.collection || [];
+  STATE.picks = remote.picks || {};
+  STATE.history = remote.history || [];
+  STATE.overrides = remote.overrides || {};
+  const keepCloudSync = STATE.settings.cloudSync;
+  STATE.settings = Object.assign({ currency:'USD' }, remote.settings||{});
+  STATE.settings.cloudSync = keepCloudSync;
+  STATE.settings.cloudSync.lastPushedAt = remote.updatedAt || Date.now();
+  Object.keys(LS_KEYS).forEach(k => persist(k));
+  toast('Synced the latest data from the cloud.');
+  render();
+}
+function watchCloud(){
+  const ref = cloudDocRef();
+  if(!ref) return;
+  if(unsubscribeSnapshot) unsubscribeSnapshot();
+  unsubscribeSnapshot = ref.onSnapshot(snap => {
+    if(!snap.exists) return;
+    const remote = snap.data();
+    if((remote.updatedAt||0) > (STATE.settings.cloudSync.lastPushedAt||0) && !cloudSyncBusy) applyRemoteState(remote);
+  }, err => console.error('cloud watch error', err));
+}
+function scheduleCloudPush(){
+  if(!STATE.settings.cloudSync || !STATE.settings.cloudSync.enabled) return;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(pushToCloud, 1200);
+}
+async function pushToCloud(){
+  const ref = cloudDocRef();
+  if(!ref) return;
+  cloudSyncBusy = true;
+  const now = Date.now();
+  const payload = {
+    collection: STATE.collection, picks: STATE.picks, history: STATE.history, overrides: STATE.overrides,
+    settings: { currency: STATE.settings.currency }, updatedAt: now,
+  };
+  try{
+    await ref.set(payload);
+    STATE.settings.cloudSync.lastPushedAt = now;
+    persist('settings');
+  }catch(e){
+    console.error('cloud push failed', e);
+  }
+  cloudSyncBusy = false;
+}
+function disconnectCloudSync(){
+  if(unsubscribeSnapshot){ unsubscribeSnapshot(); unsubscribeSnapshot=null; }
+  STATE.settings.cloudSync = { enabled:false, syncCode:'', config:null };
+  persist('settings');
+  toast('Cloud sync turned off. Your data stays right here on this device.');
+  render();
+}
+function showCloudSyncHelp(){
+  openModal('Getting a free Firebase config', `
+    <ol style="padding-left:18px;line-height:1.8;font-size:13.5px;">
+      <li>Go to <strong>console.firebase.google.com</strong> and sign in with any Google account.</li>
+      <li>Click <strong>Add project</strong>, give it any name (e.g. "kyles-deck"), and finish the wizard — you can turn off Google Analytics.</li>
+      <li>On the project overview page, click the <strong>&lt;/&gt;</strong> (web) icon to register a new web app. Any nickname is fine.</li>
+      <li>Firebase shows a <code>firebaseConfig</code> object. Copy the whole <code>{ … }</code> and paste it into the box here.</li>
+      <li>In the left sidebar go to <strong>Build → Firestore Database → Create database</strong>. Start in <strong>test mode</strong> and pick any region.</li>
+      <li>That's it for setup — every device just needs this same config plus the same sync code, entered once here in Settings.</li>
+    </ol>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin-top:12px;">
+      Test mode opens the database for 30 days. For something that keeps working after that, open the <strong>Rules</strong> tab
+      in Firestore and replace them with this — it only allows access to a document whose name is your exact sync code,
+      so nobody can browse anyone else's data without knowing it (this is convenience, not bank-grade security — treat
+      your sync code like a shared password):
+    </p>
+    <pre style="background:var(--paper-sunken);padding:10px;border-radius:6px;font-size:11.5px;overflow-x:auto;white-space:pre-wrap;">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /kylesDeckSync/{syncCode} {
+      allow read, write: if true;
+    }
+  }
+}</pre>
+  `, `<button class="btn primary" data-action="close-modal">Got it</button>`);
+}
+// Reconnect automatically on load if cloud sync was already turned on.
+if(STATE.settings.cloudSync && STATE.settings.cloudSync.enabled && STATE.settings.cloudSync.config){
+  connectCloudSync(JSON.stringify(STATE.settings.cloudSync.config), STATE.settings.cloudSync.syncCode).catch(()=>{});
+}
+
+/* ============================================================
    Settings
    ============================================================ */
 function renderSettings(){
+  const cs = STATE.settings.cloudSync || { enabled:false, syncCode:'', config:null };
   return `
     <div class="pagehead"><div><h1>Settings</h1></div></div>
     <div class="panel" style="margin-bottom:16px;">
       <div class="section-title" style="margin-top:0;">Backup &amp; export</div>
-      <p style="color:var(--ink-soft);font-size:13px;">Your collection, binder picks, and import history all live in this browser only. Back them up regularly, especially before clearing browser data.</p>
+      <p style="color:var(--ink-soft);font-size:13px;">Your collection, binder picks, and import history all live in this browser${cs.enabled ? ', and are synced to your cloud sync code' : ''}. Back them up regularly, especially before clearing browser data.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn primary" id="exportBackupBtn">Download full backup (.json)</button>
         <button class="btn" id="exportCsvBtn">Export collection (.csv)</button>
@@ -1464,9 +1903,32 @@ function renderSettings(){
       <button class="btn" id="restoreBackupBtn">Choose backup file…</button>
       <input type="file" id="restoreInput" accept=".json" class="hidden">
     </div>
+    <div class="panel" style="margin-bottom:16px;">
+      <div class="section-title" style="margin-top:0;">Cloud sync <span style="font-weight:400;color:var(--ink-soft);font-size:12px;">(optional)</span></div>
+      <p style="color:var(--ink-soft);font-size:13px;">Keep this collection in sync across your devices — put the same sync code + config on each one. Runs on a free Firebase project (about 5 minutes to set up once; free tier is enormous for a collection this size, so storage isn't something to worry about even with photos in the mix, since artwork is pulled live from the web rather than stored).</p>
+      <div style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:13px;">
+        ${cs.enabled
+          ? `<span class="dot owned"></span> Connected — syncing as <strong>${esc(cs.syncCode)}</strong>`
+          : `<span class="dot" style="background:var(--line-strong);"></span> Not connected — this device only`}
+      </div>
+      ${!cs.enabled ? `
+      <div class="field"><label>Sync code — keep this private, it's shared like a password</label>
+        <input type="text" id="csCode" placeholder="e.g. kyle-scottie-binder-2026" value="${esc(cs.syncCode||'')}"></div>
+      <div class="field"><label>Firebase web app config — paste the whole object from your Firebase console</label>
+        <textarea id="csConfig" rows="5" placeholder='{"apiKey":"…","projectId":"…", …}'></textarea></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn primary" id="csConnectBtn">${ICONS.cloud} Connect cloud sync</button>
+        <button class="btn ghost" id="csHelpBtn">How do I get a Firebase config?</button>
+      </div>` : `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn" id="csPushBtn">Push this device's data to the cloud</button>
+        <button class="btn" id="csPullBtn">Pull latest from the cloud</button>
+        <button class="btn accent" id="csDisconnectBtn">${ICONS.cloudOff} Turn off cloud sync</button>
+      </div>`}
+    </div>
     <div class="panel">
       <div class="section-title" style="margin-top:0;">Reset</div>
-      <p style="color:var(--ink-soft);font-size:13px;">Permanently erase all cards, binder picks, and import history from this browser.</p>
+      <p style="color:var(--ink-soft);font-size:13px;">Permanently erase all cards, binder picks, and import history from this browser${cs.enabled ? ' and from the cloud sync code above' : ''}.</p>
       <button class="btn accent" id="resetAllBtn">${ICONS.trash} Erase all data</button>
     </div>
   `;
