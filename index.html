@@ -99,10 +99,12 @@ button{font-family:inherit;}
   .tabbar{
     display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--ink);
     padding:6px 2px calc(6px + env(safe-area-inset-bottom));z-index:40;border-top:1px solid rgba(0,0,0,.2);
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
   }
+  .tabbar::-webkit-scrollbar{display:none;}
   .tabbar button{
-    flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;
-    color:rgba(234,230,220,.55);font-size:10px;padding:6px 2px;border-radius:8px;
+    flex:0 0 auto;min-width:60px;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;
+    color:rgba(234,230,220,.55);font-size:10px;padding:6px 4px;border-radius:8px;
   }
   .tabbar button svg{width:19px;height:19px;}
   .tabbar button.active{color:#fff;}
@@ -554,12 +556,17 @@ function speciesSearchMatches(q, limit){
   limit = limit || 8;
   if(!q || !q.trim()) return [];
   const nq = norm(q);
+  const nqDigits = q.trim().replace(/^#/,'');
+  const isNumericQuery = /^\d+$/.test(nqDigits);
   const scored = [];
   for(const s of SPECIES){
     const n = norm(s.name);
+    const dexStr = s.dex!=null ? String(s.dex) : '';
     let score = -1;
     if(n === nq) score = 0;
+    else if(isNumericQuery && dexStr === nqDigits) score = 0;
     else if(n.startsWith(nq)) score = 1;
+    else if(isNumericQuery && dexStr.length && dexStr.startsWith(nqDigits)) score = 1;
     else if(n.includes(nq)) score = 2;
     else if(norm(s.evoFamily||'').includes(nq)) score = 3;
     if(score >= 0) scored.push({ s, score });
@@ -1125,7 +1132,7 @@ function renderCollection(){
 
   if(collectionFilter.q){
     const q = norm(collectionFilter.q);
-    rows = rows.filter(c => norm(c.species||c.productName).includes(q) || norm(c.set).includes(q) || norm(c.productName).includes(q));
+    rows = rows.filter(c => norm(c.species||c.productName).includes(q) || norm(c.set).includes(q) || norm(c.productName).includes(q) || norm(c.cardNumber).includes(q));
   }
   if(collectionFilter.group){
     rows = rows.filter(c => c.species && speciesByName.get(c.species)?.group === collectionFilter.group);
@@ -1150,7 +1157,7 @@ function renderCollection(){
     </div>
 
     <div class="toolbar">
-      <div class="searchbar">${ICONS.search}<input type="search" id="colSearch" placeholder="Search cards, species, sets…" value="${esc(collectionFilter.q)}"></div>
+      <div class="searchbar">${ICONS.search}<input type="search" id="colSearch" placeholder="Search cards, species, sets, numbers…" value="${esc(collectionFilter.q)}"></div>
       <select id="colGroup">
         <option value="">All groups</option>
         ${groups.map(g=>`<option value="${esc(g)}" ${collectionFilter.group===g?'selected':''}>${esc(g)}</option>`).join('')}
@@ -1177,7 +1184,7 @@ function renderCardRow(c){
   const taxLabel = sp ? taxBreadcrumb(sp) : null;
   return `
     <div class="cardrow" data-card="${c.id}">
-      <div class="cardrow-art">${sp ? speciesImgTag(sp,'cardrow-img') : `<div class="imgfallback">${ICONS.photo}</div>`}</div>
+      <div class="cardrow-art">${sp ? speciesImgTag(sp,'cardrow-img') : `<div class="imgwrap cardrow-img"><div class="imgfallback">${ICONS.photo}</div></div>`}</div>
       <div class="info">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-family:var(--font-display);font-weight:600;">${esc(c.species || c.productName)}</span>
