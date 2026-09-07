@@ -408,6 +408,30 @@ const SUBCATEGORY_ORDER = {
  'Alien & Cosmic': ["Alien & Microscopic Life","Cosmic Bodies & Beings"],
 };
 
+// Groups a list of species by evolution family, orders the families by
+// (the base/first-stage member's main type, alphabetically) then (the base
+// member's name, alphabetically), and orders each family's own members from
+// lowest evolution stage to highest. This keeps a whole line together (e.g.
+// Vullaby then Mandibuzz) instead of interleaving unrelated families that
+// happen to share a type (e.g. Mandibuzz, Murkrow, Vullaby alphabetically).
+function sortByFamilyThenEvo(list){
+  const byFam = new Map();
+  for(const s of list){
+    const fam = s.evoFamily || s.name;
+    if(!byFam.has(fam)) byFam.set(fam, []);
+    byFam.get(fam).push(s);
+  }
+  const families = [...byFam.values()].map(members => {
+    const ordered = members.slice().sort((a,b) => (a.evoOrder||0)-(b.evoOrder||0));
+    const base = ordered.find(m=>!m.variant) || ordered[0];
+    return { members: ordered, base, type: (base.types && base.types[0]) || '' };
+  });
+  families.sort((a,b) => a.type.localeCompare(b.type) || a.base.name.localeCompare(b.base.name));
+  const result = [];
+  families.forEach(f => result.push(...f.members));
+  return result;
+}
+
 function computeBinderLayout(species){
   const byPath = new Map();
   for(const s of species){
@@ -431,14 +455,9 @@ function computeBinderLayout(species){
       const subs = SUBCATEGORY_ORDER[category]||[category];
       for(const subcategory of subs){
         const path = [group,category,subcategory].join('||');
-        const list = byPath.get(path);
-        if(!list || !list.length) continue;
-        // Sort by each species' main (first) type alphabetically, then by name alphabetically.
-        list.sort((a,b) => {
-          const typeA = (a.types && a.types[0]) || '';
-          const typeB = (b.types && b.types[0]) || '';
-          return typeA.localeCompare(typeB) || a.name.localeCompare(b.name);
-        });
+        if(!byPath.has(path)) continue;
+        const list = sortByFamilyThenEvo(byPath.get(path));
+        if(!list.length) continue;
         if(group!==lastGroup){
           place({type:'GROUP LABEL',labelLevel:'GROUP',display:group,dex:null,group,category,subcategory,evoFamily:null,evoOrder:null,key:'GROUP::'+group,taxBreak:'NEW GROUP'});
         }
@@ -2052,13 +2071,13 @@ function renderExtras(){
     const q = norm(extrasFilter.q);
     list = list.filter(s => norm(s.name).includes(q));
   }
-  list.sort((a,b) => {
-    const ia = taxOrderIndex.has(speciesTaxKey(a)) ? taxOrderIndex.get(speciesTaxKey(a)) : 99999;
-    const ib = taxOrderIndex.has(speciesTaxKey(b)) ? taxOrderIndex.get(speciesTaxKey(b)) : 99999;
-    if(ia !== ib) return ia - ib;
-    const typeA = (a.types && a.types[0]) || '', typeB = (b.types && b.types[0]) || '';
-    return typeA.localeCompare(typeB) || a.name.localeCompare(b.name);
-  });
+  const buckets = new Map();
+  for(const s of list){
+    const key = taxOrderIndex.has(speciesTaxKey(s)) ? taxOrderIndex.get(speciesTaxKey(s)) : 99999;
+    if(!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(s);
+  }
+  list = [...buckets.keys()].sort((a,b)=>a-b).flatMap(key => sortByFamilyThenEvo(buckets.get(key)));
 
   const cells = [];
   let lastGroup = null;
