@@ -218,6 +218,7 @@ table.datatable tr:hover td{background:var(--paper-sunken);}
 .pocket .body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 8px;text-align:center;}
 .pocket .nm{font-family:var(--font-display);font-weight:600;font-size:12.5px;line-height:1.2;}
 .pocket .evomini{font-size:8px;color:var(--ink-soft);margin-top:2px;line-height:1.2;}
+.pocket .setmini{font-size:8px;color:var(--brass-soft);margin-top:2px;line-height:1.2;font-weight:600;}
 .pocket .foot{padding:0 8px 8px;display:flex;justify-content:center;gap:3px;}
 .pocket.owned{box-shadow:inset 0 0 0 2px var(--moss), 0 2px 6px rgba(0,0,0,.35);}
 .pocket.haspick{box-shadow:inset 0 0 0 2px var(--brass), 0 2px 6px rgba(0,0,0,.35);}
@@ -256,6 +257,14 @@ table.datatable tr:hover td{background:var(--paper-sunken);}
 .iconbtn.xs svg{width:10px;height:10px;}
 .mark-owned-btn{background:var(--paper-raised);color:var(--ink-soft);box-shadow:0 0 0 1px var(--line);}
 .mark-owned-btn:hover{color:var(--brass);box-shadow:0 0 0 1px var(--brass);}
+
+.more-menu-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.more-menu-item{
+  display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;font-size:12.5px;
+}
+.more-menu-item svg{width:22px;height:22px;}
+.more-menu-item.active{border-color:var(--brass);color:var(--brass);}
 
 .field{margin-bottom:14px;}
 .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;}
@@ -553,6 +562,7 @@ const ICONS = {
   photo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.7"/><path d="M21 15l-5-5-11 11"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="4 12.5 9.5 18 20 6"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2.1"/><circle cx="12" cy="12" r="2.1"/><circle cx="19" cy="12" r="2.1"/></svg>',
 };
 
 /* ---------------- static data lookups (built once) ---------------- */
@@ -598,6 +608,7 @@ const LS_KEYS = {
   manualOwned: 'pkmn.manualOwned',
   taxonomy: 'pkmn.taxonomy',
   familyOverrides: 'pkmn.familyOverrides',
+  customSpecies: 'pkmn.customSpecies',
 };
 
 function loadJSON(key, fallback){
@@ -621,6 +632,7 @@ let STATE = {
   manualOwned: loadJSON(LS_KEYS.manualOwned, {}), // species name -> true (manually marked owned, no card record)
   taxonomy: loadJSON(LS_KEYS.taxonomy, null), // {groups,categories,subcategories} - your custom category list, if you've edited it
   familyOverrides: loadJSON(LS_KEYS.familyOverrides, {}), // species name -> {evoFamily,evoOrder} - your custom evolution-family edits
+  customSpecies: loadJSON(LS_KEYS.customSpecies, []), // full species records you've added by hand (not in the built-in dex)
 };
 if(!STATE.settings.cloudSync) STATE.settings.cloudSync = { enabled:false, syncCode:'', config:null };
 // Load your saved category list (if you've customized it) over the built-in
@@ -634,6 +646,14 @@ if(STATE.taxonomy && STATE.taxonomy.groups && STATE.taxonomy.categories && STATE
   STATE.taxonomy = { groups: GROUP_ORDER, categories: CATEGORY_ORDER, subcategories: SUBCATEGORY_ORDER };
   saveJSON(LS_KEYS.taxonomy, STATE.taxonomy);
 }
+// Add back any Pokémon you've hand-added that aren't in the built-in dex.
+// Must happen before the overrides below, since those look species up by name.
+STATE.customSpecies.forEach(sp => {
+  if(sp && sp.name && !speciesByName.has(sp.name)){
+    SPECIES.push(sp);
+    speciesByName.set(sp.name, sp);
+  }
+});
 // Apply any saved recategorizations onto SPECIES before anything else reads it,
 // then recompute the binder layout so it reflects them from the first render.
 Object.keys(STATE.categoryOverrides).forEach(nm => {
@@ -683,6 +703,7 @@ function persist(part){
   else if(part==='manualOwned') saveJSON(LS_KEYS.manualOwned, STATE.manualOwned);
   else if(part==='taxonomy') saveJSON(LS_KEYS.taxonomy, STATE.taxonomy);
   else if(part==='familyOverrides') saveJSON(LS_KEYS.familyOverrides, STATE.familyOverrides);
+  else if(part==='customSpecies') saveJSON(LS_KEYS.customSpecies, STATE.customSpecies);
   // Push to the cloud (if connected) whenever real data changes. Settings
   // writes are excluded so that pushToCloud() recording its own
   // lastPushedAt timestamp (a settings write) can't trigger itself again.
@@ -718,6 +739,13 @@ function collectionStats(){
 
 function cardsForSpecies(name){
   return STATE.collection.filter(c => c.species === name);
+}
+// The specific card record chosen as a species' main-binder pick, if any —
+// used to surface that card's set/number on its binder pocket.
+function pickedCardFor(name){
+  const id = STATE.picks[name];
+  if(!id) return null;
+  return STATE.collection.find(c => c.id === id) || null;
 }
 function speciesOwnedQty(name){
   return cardsForSpecies(name).reduce((s,c)=>s+c.quantity,0);
@@ -1109,6 +1137,10 @@ const ROUTES = [
   { id:'history', label:'Import History', icon:'history' },
   { id:'settings', label:'Settings', icon:'settings' },
 ];
+// The bottom tabbar only has room for a handful of tabs before they either
+// get crammed or require horizontal scrolling to discover. These four cover
+// the screens used day-to-day; everything else lives behind "More".
+const MOBILE_PRIMARY_ROUTE_IDS = ['dashboard','collection','binder','pokedex'];
 
 function currentRoute(){
   const hash = location.hash.replace(/^#\/?/, '');
@@ -1117,10 +1149,28 @@ function currentRoute(){
 }
 
 function navHTML(activeId, mobile){
-  return ROUTES.map(r => mobile
-    ? `<button class="${r.id===activeId?'active':''}" data-nav="${r.id}">${ICONS[r.icon]}<span>${r.label.replace(' History','')}</span></button>`
-    : `<button class="navlink ${r.id===activeId?'active':''}" data-nav="${r.id}">${ICONS[r.icon]}<span>${r.label}</span></button>`
-  ).join('');
+  if(!mobile){
+    return ROUTES.map(r => `<button class="navlink ${r.id===activeId?'active':''}" data-nav="${r.id}">${ICONS[r.icon]}<span>${r.label}</span></button>`).join('');
+  }
+  const overflow = ROUTES.filter(r => !MOBILE_PRIMARY_ROUTE_IDS.includes(r.id));
+  const primaryHTML = MOBILE_PRIMARY_ROUTE_IDS.map(id => ROUTES.find(r=>r.id===id))
+    .map(r => `<button class="${r.id===activeId?'active':''}" data-nav="${r.id}">${ICONS[r.icon]}<span>${r.label.replace(' History','')}</span></button>`)
+    .join('');
+  const moreActive = overflow.some(r => r.id===activeId);
+  return primaryHTML + `<button class="${moreActive?'active':''}" data-action="open-more-menu">${ICONS.more}<span>More</span></button>`;
+}
+function openMoreMenu(){
+  const { id: activeId } = currentRoute();
+  const overflow = ROUTES.filter(r => !MOBILE_PRIMARY_ROUTE_IDS.includes(r.id));
+  const body = `
+    <div class="more-menu-list">
+      ${overflow.map(r => `
+        <button class="more-menu-item ${r.id===activeId?'active':''}" data-nav="${r.id}">
+          ${ICONS[r.icon]}<span>${r.label}</span>
+        </button>`).join('')}
+    </div>`;
+  openModal('More', body, '');
+  $$('#modalOverlay [data-nav]').forEach(btn => btn.addEventListener('click', closeModal));
 }
 
 function renderShell(){
@@ -1187,18 +1237,22 @@ document.addEventListener('click', (e) => {
   if(gotoBinder){ closeAllSearchDropdowns(); location.hash = '#/binder/' + gotoBinder.dataset.gotoBinder; return; }
   const markOwnedBtn = e.target.closest('[data-action="toggle-manual-owned"]');
   if(markOwnedBtn){ toggleManualOwned(markOwnedBtn.dataset.species); return; }
-  const spNav = e.target.closest('[data-nav-species]');
-  if(spNav){ closeAllSearchDropdowns(); location.hash = '#/pokedex/' + encodeURIComponent(spNav.dataset.navSpecies); return; }
-  const taxNav = e.target.closest('[data-nav-taxonomy]');
-  if(taxNav){ location.hash = '#/taxonomy/' + taxNav.dataset.navTaxonomy; return; }
-  const binNav = e.target.closest('[data-nav-binder]');
-  if(binNav){ location.hash = '#/binder/' + binNav.dataset.navBinder; return; }
   const pickBtn = e.target.closest('[data-action="toggle-pick"]');
   if(pickBtn){ toggleBinderPick(pickBtn.dataset.card, pickBtn.dataset.species); return; }
   const editBtn = e.target.closest('[data-action="edit-card"]');
   if(editBtn){ openCardEditor(editBtn.dataset.card); return; }
   const delBtn = e.target.closest('[data-action="delete-card"]');
   if(delBtn){ deleteCard(delBtn.dataset.card); return; }
+  const spNav = e.target.closest('[data-nav-species]');
+  if(spNav){ closeAllSearchDropdowns(); location.hash = '#/pokedex/' + encodeURIComponent(spNav.dataset.navSpecies); return; }
+  const taxNav = e.target.closest('[data-nav-taxonomy]');
+  if(taxNav){ location.hash = '#/taxonomy/' + taxNav.dataset.navTaxonomy; return; }
+  const binNav = e.target.closest('[data-nav-binder]');
+  if(binNav){ location.hash = '#/binder/' + binNav.dataset.navBinder; return; }
+  const addCardBtn = e.target.closest('[data-action="open-add-card"]');
+  if(addCardBtn){ openAddCardModal(); return; }
+  const moreMenuBtn = e.target.closest('[data-action="open-more-menu"]');
+  if(moreMenuBtn){ openMoreMenu(); return; }
   const editBinderToggle = e.target.closest('[data-action="toggle-binder-edit"]');
   if(editBinderToggle){ toggleBinderEditMode(); return; }
   const editLabelBtn = e.target.closest('[data-action="edit-label"]');
@@ -1253,6 +1307,8 @@ document.addEventListener('click', (e) => {
   if(editFamBtn){ openFamilyEditor(editFamBtn.dataset.fam); return; }
   const famRemoveBtn = e.target.closest('[data-action="fam-remove-member"]');
   if(famRemoveBtn){ removeFamilyMember(famRemoveBtn.dataset.species, famRemoveBtn.dataset.fam); return; }
+  const addSpBtn = e.target.closest('[data-action="open-add-species"]');
+  if(addSpBtn){ openAddSpeciesModal(); return; }
 });
 
 /* ---------------- per-screen wiring (inputs/selects/drag-drop) ---------------- */
@@ -1305,6 +1361,7 @@ function wireScreenEvents(routeId){
   else if(routeId === 'settings'){
     $('#exportBackupBtn')?.addEventListener('click', exportBackup);
     $('#exportCsvBtn')?.addEventListener('click', exportCollectionCSV);
+    $('#exportTaxCsvBtn')?.addEventListener('click', exportCategorizationCSV);
     const restoreInput = $('#restoreInput');
     $('#restoreBackupBtn')?.addEventListener('click', () => restoreInput.click());
     restoreInput?.addEventListener('change', e => { if(e.target.files[0]) restoreBackup(e.target.files[0]); });
@@ -1314,7 +1371,7 @@ function wireScreenEvents(routeId){
         GROUP_ORDER = JSON.parse(JSON.stringify(DEFAULT_GROUP_ORDER));
         CATEGORY_ORDER = JSON.parse(JSON.stringify(DEFAULT_CATEGORY_ORDER));
         SUBCATEGORY_ORDER = JSON.parse(JSON.stringify(DEFAULT_SUBCATEGORY_ORDER));
-        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{ currency:'USD', cloudSync:{enabled:false,syncCode:'',config:null} }, labelOverrides:{}, mergedLabels:{}, categoryOverrides:{}, manualOwned:{}, taxonomy:{ groups:GROUP_ORDER, categories:CATEGORY_ORDER, subcategories:SUBCATEGORY_ORDER }, familyOverrides:{} };
+        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{ currency:'USD', cloudSync:{enabled:false,syncCode:'',config:null} }, labelOverrides:{}, mergedLabels:{}, categoryOverrides:{}, manualOwned:{}, taxonomy:{ groups:GROUP_ORDER, categories:CATEGORY_ORDER, subcategories:SUBCATEGORY_ORDER }, familyOverrides:{}, customSpecies:[] };
         Object.keys(LS_KEYS).forEach(k => persist(k));
         rebuildBinder();
         toast('All data erased.');
@@ -1455,7 +1512,10 @@ function renderCollection(){
   return `
     <div class="pagehead">
       <div><h1>Collection</h1><div class="sub">${fmtInt(STATE.collection.length)} card entries · ${fmtInt(s.totalCards)} total cards · ${fmtMoney(s.totalValue)}</div></div>
-      <a href="#/import" class="btn primary" data-nav="import">${ICONS.upload} Import</a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" data-action="open-add-card">${ICONS.plus} Add card manually</button>
+        <a href="#/import" class="btn primary" data-nav="import">${ICONS.upload} Import</a>
+      </div>
     </div>
 
     <div class="toolbar">
@@ -1556,6 +1616,70 @@ function openCardEditor(cardId){
   });
 }
 
+/* ---------------- Add a card manually, with no Collectr import ----------------
+   For cards you own that never came through a Collectr export (e.g. a
+   physical pickup, a gift, or a card the CSV importer couldn't parse).
+   Creates a normal STATE.collection record, so it behaves identically to an
+   imported card everywhere else — bindable as a binder pick, editable,
+   deletable, counted in stats. */
+function openAddCardModal(){
+  openModal(`Add a card`, `
+    <div class="field"><label>Species</label>
+      ${speciesPickerHTML({ id:'addSpecies', placeholder:'Type to search species…' })}
+    </div>
+    <div class="row2">
+      <div class="field"><label>Set</label><input type="text" id="addSet" placeholder="e.g. Scarlet &amp; Violet"></div>
+      <div class="field"><label>Card number</label><input type="text" id="addCardNumber" placeholder="e.g. 045/198"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Rarity</label><input type="text" id="addRarity" placeholder="e.g. Holo Rare"></div>
+      <div class="field"><label>Variant</label><input type="text" id="addVariance" placeholder="e.g. Reverse Holo"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Grade</label><input type="text" id="addGrade" placeholder="e.g. PSA 10, or leave blank if raw"></div>
+      <div class="field"><label>Condition</label><input type="text" id="addCondition" placeholder="e.g. Near Mint"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Quantity</label><input type="number" min="1" id="addQty" value="1"></div>
+      <div class="field"><label>Date added</label><input type="date" id="addDate" value="${todayISO()}"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Cost paid ($)</label><input type="number" step="0.01" min="0" id="addCost" value="0"></div>
+      <div class="field"><label>Market price ($)</label><input type="number" step="0.01" min="0" id="addMkt" value="0"></div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="addNotes" rows="2"></textarea></div>
+  `, `
+    <button class="btn ghost" data-action="close-modal">Cancel</button>
+    <button class="btn primary" id="addCardSaveBtn">Add card</button>
+  `);
+  wireSpeciesPickers();
+  $('#addCardSaveBtn').addEventListener('click', () => {
+    const species = $('#addSpecies').value || null;
+    if(!species){ toast('Pick a species for this card.'); return; }
+    const rec = {
+      id: uid(),
+      species,
+      productName: species,
+      set: $('#addSet').value.trim(),
+      cardNumber: $('#addCardNumber').value.trim(),
+      rarity: $('#addRarity').value.trim(),
+      variance: $('#addVariance').value.trim(),
+      grade: $('#addGrade').value.trim(),
+      condition: $('#addCondition').value.trim(),
+      costPaid: parseFloat($('#addCost').value)||0,
+      marketPrice: parseFloat($('#addMkt').value)||0,
+      quantity: Math.max(1, parseInt($('#addQty').value,10)||1),
+      dateAdded: $('#addDate').value || todayISO(),
+      notes: $('#addNotes').value,
+      importBatch: null,
+    };
+    STATE.collection.push(rec);
+    persist('collection');
+    closeModal();
+    toast(`${species} added to your collection.`);
+    render();
+  });
+}
 function toggleBinderPick(cardId, speciesName){
   if(STATE.picks[speciesName] === cardId){
     delete STATE.picks[speciesName];
@@ -1644,6 +1768,92 @@ function evolvesFrom(s){
   const overlap = x => (x.types||[]).filter(t => (s.types||[]).includes(t)).length;
   return prior.slice().sort((a,b)=>overlap(b)-overlap(a))[0].name;
 }
+/* ---------------- Add a Pokémon that isn't in the dex yet ----------------
+   Creates a brand-new species record (e.g. a regional form or custom entry
+   you own that the built-in dex doesn't have). Saved to STATE.customSpecies
+   so it survives reloads and reimports, and gets its own binder slot right
+   away via rebuildBinder(). */
+function openAddSpeciesModal(){
+  const state = { group:'', category:'', subcategory:'', types: [] };
+  function body(){
+    const cats = CATEGORY_ORDER[state.group] || [];
+    if(!cats.includes(state.category)) state.category = '';
+    const subs = state.category ? (SUBCATEGORY_ORDER[state.category] || [state.category]) : [];
+    if(!subs.includes(state.subcategory)) state.subcategory = '';
+    return `
+      <div class="field"><label>Name</label><input type="text" id="newSpName" maxlength="60" placeholder="e.g. Galarian Sirfetch'd"></div>
+      <div class="row2">
+        <div class="field"><label>Dex # (leave blank if it has none)</label><input type="number" min="1" id="newSpDex"></div>
+        <div class="field"><label>Generation</label><input type="text" id="newSpGen" placeholder="e.g. Generation 9, or Custom"></div>
+      </div>
+      <div class="field"><label>Types (pick up to 2)</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          ${ALL_TYPES.map(t=>`<button type="button" class="chip newsp-type-chip ${state.types.includes(t)?'active':''}" data-type="${esc(t)}">${esc(t)}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field"><label>Group</label>
+        <select id="newSpGroup"><option value="">— choose —</option>${GROUP_ORDER.map(g=>`<option value="${esc(g)}" ${state.group===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Category</label>
+        <select id="newSpCategory" ${!state.group?'disabled':''}><option value="">— choose —</option>${cats.map(c=>`<option value="${esc(c)}" ${state.category===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+      </div>
+      <div class="field"><label>Subcategory</label>
+        <select id="newSpSubcategory" ${!state.category?'disabled':''}><option value="">— choose —</option>${subs.map(s=>`<option value="${esc(s)}" ${state.subcategory===s?'selected':''}>${esc(s)}</option>`).join('')}</select>
+      </div>
+      <p style="font-size:12px;color:var(--ink-soft);margin-top:6px;">It'll start as its own single-stage entry. If it belongs in an existing evolution family, use "Edit family" on the Evolutions page afterward to link it up.</p>
+    `;
+  }
+  function paint(){
+    const keep = { name:$('#newSpName')?.value||'', dex:$('#newSpDex')?.value||'', gen:$('#newSpGen')?.value||'' };
+    $('#addSpBody').innerHTML = body();
+    $('#newSpName').value = keep.name; $('#newSpDex').value = keep.dex; $('#newSpGen').value = keep.gen;
+    wire();
+  }
+  function wire(){
+    $('#newSpGroup').addEventListener('change', e => { state.group = e.target.value; state.category=''; state.subcategory=''; paint(); });
+    $('#newSpCategory').addEventListener('change', e => { state.category = e.target.value; state.subcategory=''; paint(); });
+    $('#newSpSubcategory').addEventListener('change', e => { state.subcategory = e.target.value; });
+    $$('.newsp-type-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const t = chip.dataset.type;
+        const idx = state.types.indexOf(t);
+        if(idx>=0) state.types.splice(idx,1);
+        else { if(state.types.length>=2){ toast('Choose at most 2 types.'); return; } state.types.push(t); }
+        paint();
+      });
+    });
+  }
+  openModal('Add a Pokémon', `<div id="addSpBody">${body()}</div>`, `
+    <button class="btn ghost" data-action="close-modal">Cancel</button>
+    <button class="btn accent" id="addSpSaveBtn">Add</button>
+  `);
+  wire();
+  $('#addSpSaveBtn').addEventListener('click', () => {
+    const name = ($('#newSpName').value||'').trim();
+    if(!name){ toast('Give it a name.'); return; }
+    if(speciesByName.has(name)){ toast('A Pokémon with that exact name already exists — search for it in the Pokédex.'); return; }
+    if(!state.group || !state.category || !state.subcategory){ toast('Choose a group, category, and subcategory.'); return; }
+    const dexRaw = $('#newSpDex').value;
+    const dex = dexRaw ? (parseInt(dexRaw,10)||null) : null;
+    const generation = ($('#newSpGen').value||'').trim() || 'Custom';
+    const sp = {
+      id: 'custom-'+Date.now(),
+      dex, name, group: state.group, category: state.category, subcategory: state.subcategory,
+      generation, evoFamily: name, evoOrder: 1,
+      types: state.types.length ? state.types.slice() : ['Normal'],
+    };
+    SPECIES.push(sp);
+    speciesByName.set(sp.name, sp);
+    STATE.customSpecies.push(sp);
+    persist('customSpecies');
+    STATE.categoryOverrides[sp.name] = { group: sp.group, category: sp.category, subcategory: sp.subcategory };
+    persist('categoryOverrides');
+    rebuildBinder();
+    closeModal();
+    toast(`${name} added — it has a spot in the binder now.`);
+    render();
+  });
+}
 function renderPokedex(){
   const groups = Array.from(new Set(SPECIES.map(s=>s.group))).sort();
   let list = SPECIES.slice();
@@ -1665,7 +1875,10 @@ function renderPokedex(){
   return `
     <div class="pagehead">
       <div><h1>Pokédex</h1><div class="sub">${fmtInt(SPECIES.length)} species · the master reference</div></div>
-      <button class="btn ${pokedexSelectMode?'accent':''}" data-action="toggle-pdx-select-mode">${pokedexSelectMode?'Done selecting':'Select multiple'}</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" data-action="open-add-species">${ICONS.plus} Add Pokémon</button>
+        <button class="btn ${pokedexSelectMode?'accent':''}" data-action="toggle-pdx-select-mode">${pokedexSelectMode?'Done selecting':'Select multiple'}</button>
+      </div>
     </div>
     ${pokedexSelectMode ? `
     <div class="binder-edit-toolbar">
@@ -2415,6 +2628,8 @@ function renderPocket(slot, editMode, selection){
   const manualFlag = !!STATE.manualOwned[slot.display];
   const owned = qty>0 || manualFlag;
   const pick = !!STATE.picks[slot.display];
+  const pickedCard = pick ? pickedCardFor(slot.display) : null;
+  const setLabel = pickedCard ? [pickedCard.set, pickedCard.cardNumber ? '#'+pickedCard.cardNumber : ''].filter(Boolean).join(' ') : '';
   const sp = speciesByName.get(slot.display);
   const taxLabel = sp ? taxBreadcrumb(sp) : '';
   const fromName = sp ? evolvesFrom(sp) : null;
@@ -2431,9 +2646,11 @@ function renderPocket(slot, editMode, selection){
           <div class="nm">${esc(slot.display)}</div>
           ${owned && taxLabel ? `<div class="taxmini">${esc(taxLabel)}</div>` : ''}
           ${owned && fromName ? `<div class="evomini">Evolves from ${esc(fromName)}</div>` : ''}
+          ${setLabel ? `<div class="setmini">${esc(setLabel)}</div>` : ''}
         </div>
         <div class="foot">
           ${owned?'<span class="dot owned"></span>':''}${pick?'<span class="dot pick"></span>':''}
+          ${pickedCard ? `<button class="iconbtn xs" data-action="edit-card" data-card="${esc(pickedCard.id)}" title="Edit this card">${ICONS.edit}</button>` : ''}
           ${qty===0 ? `<button class="iconbtn xs mark-owned-btn" data-action="toggle-manual-owned" data-species="${esc(slot.display)}" title="${manualFlag?'Unmark as owned':'Mark as owned (card not matched by import)'}">${manualFlag?ICONS.check:ICONS.plus}</button>` : ''}
         </div>
       </div>
@@ -2911,6 +3128,7 @@ function renderSettings(){
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
         <button class="btn primary" id="exportBackupBtn">Download full backup (.json)</button>
         <button class="btn" id="exportCsvBtn">Export collection (.csv)</button>
+        <button class="btn" id="exportTaxCsvBtn">Export categorization list (.csv)</button>
       </div>
     </div>
     <div class="panel" style="margin-bottom:16px;">
@@ -2973,6 +3191,28 @@ function exportCollectionCSV(){
   });
   downloadFile(`kyles-deck-collection-${todayISO()}.csv`, lines.join('\n'), 'text/csv');
 }
+function exportCategorizationCSV(){
+  const headers = ['Species','Dex #','Group','Category','Subcategory','Evolution Family','Evolution Stage','Owned','Binder Page'];
+  const lines = [headers.join(',')];
+  SPECIES.slice()
+    .sort((a,b)=> (a.dex??99999)-(b.dex??99999) || a.name.localeCompare(b.name))
+    .forEach(s => {
+      const slot = binderSlotBySpecies.get(s.name);
+      const row = [
+        s.name,
+        s.dex!=null ? s.dex : '',
+        s.group||'',
+        s.category||'',
+        s.subcategory||'',
+        s.evoFamily||'',
+        s.evoOrder!=null ? s.evoOrder : '',
+        isOwned(s.name) ? 'Yes' : 'No',
+        slot ? slot.page : '',
+      ].map(v => `"${String(v==null?'':v).replace(/"/g,'""')}"`);
+      lines.push(row.join(','));
+    });
+  downloadFile(`kyles-deck-categorization-${todayISO()}.csv`, lines.join('\n'), 'text/csv');
+}
 function restoreBackup(file){
   const reader = new FileReader();
   reader.onload = e => {
@@ -2987,11 +3227,18 @@ function restoreBackup(file){
           manualOwned: data.manualOwned||{},
           taxonomy: data.taxonomy || { groups: JSON.parse(JSON.stringify(DEFAULT_GROUP_ORDER)), categories: JSON.parse(JSON.stringify(DEFAULT_CATEGORY_ORDER)), subcategories: JSON.parse(JSON.stringify(DEFAULT_SUBCATEGORY_ORDER)) },
           familyOverrides: data.familyOverrides||{},
+          customSpecies: data.customSpecies||[],
         };
         GROUP_ORDER = STATE.taxonomy.groups;
         CATEGORY_ORDER = STATE.taxonomy.categories;
         SUBCATEGORY_ORDER = STATE.taxonomy.subcategories;
         Object.keys(LS_KEYS).forEach(k => persist(k));
+        STATE.customSpecies.forEach(sp => {
+          if(sp && sp.name && !speciesByName.has(sp.name)){
+            SPECIES.push(sp);
+            speciesByName.set(sp.name, sp);
+          }
+        });
         Object.keys(STATE.categoryOverrides).forEach(nm => {
           const sp = SPECIES.find(s => s.name === nm);
           const ov = STATE.categoryOverrides[nm];
