@@ -426,6 +426,11 @@ let SUBCATEGORY_ORDER = {
 const DEFAULT_GROUP_ORDER = JSON.parse(JSON.stringify(GROUP_ORDER));
 const DEFAULT_CATEGORY_ORDER = JSON.parse(JSON.stringify(CATEGORY_ORDER));
 const DEFAULT_SUBCATEGORY_ORDER = JSON.parse(JSON.stringify(SUBCATEGORY_ORDER));
+// Bump this whenever GROUP_ORDER/CATEGORY_ORDER/SUBCATEGORY_ORDER above change
+// (renames, re-sorts, new categories, etc). A saved taxonomy from an older
+// version is upgraded on load — see the merge logic near STATE.taxonomy below —
+// instead of silently shadowing the new built-ins forever.
+const TAXONOMY_SCHEMA_VERSION = 2;
 
 // Groups a list of species by evolution family, orders the families by
 // (the base/first-stage member's main type, alphabetically) then (the base
@@ -643,12 +648,42 @@ if(!STATE.settings.cloudSync) STATE.settings.cloudSync = { enabled:false, syncCo
 // Load your saved category list (if you've customized it) over the built-in
 // one, or seed it from the built-ins the first time. Must happen before
 // rebuildBinder() below, since the binder layout reads these tables.
-if(STATE.taxonomy && STATE.taxonomy.groups && STATE.taxonomy.categories && STATE.taxonomy.subcategories){
-  GROUP_ORDER = STATE.taxonomy.groups;
-  CATEGORY_ORDER = STATE.taxonomy.categories;
-  SUBCATEGORY_ORDER = STATE.taxonomy.subcategories;
+//
+// A saved taxonomy only wins outright if it's tagged with the CURRENT
+// TAXONOMY_SCHEMA_VERSION. Otherwise (first run, or a save from before this
+// version existed) it's out of date relative to the built-ins above — e.g.
+// after a taxonomy merge that renames/re-sorts categories — so instead of
+// letting a stale save silently shadow the new built-ins forever (which
+// would leave the binder looking unchanged, and could even drop newly
+// recategorized Pokémon whose new category/subcategory isn't in the old
+// saved lists), we start from the new built-ins and carry forward only the
+// groups/categories/subcategories the old save had that AREN'T part of the
+// new built-in schema — i.e. anything added by hand via the category
+// manager. Those are appended to the end of their group/category so they
+// survive the upgrade instead of being lost.
+const savedTax = STATE.taxonomy;
+const savedTaxIsCurrent = !!(savedTax && savedTax.version === TAXONOMY_SCHEMA_VERSION
+  && savedTax.groups && savedTax.categories && savedTax.subcategories);
+if(savedTaxIsCurrent){
+  GROUP_ORDER = savedTax.groups;
+  CATEGORY_ORDER = savedTax.categories;
+  SUBCATEGORY_ORDER = savedTax.subcategories;
 } else {
-  STATE.taxonomy = { groups: GROUP_ORDER, categories: CATEGORY_ORDER, subcategories: SUBCATEGORY_ORDER };
+  if(savedTax && savedTax.groups && savedTax.categories && savedTax.subcategories){
+    // Upgrading from an older (or unversioned) save: fold in any custom
+    // groups/categories/subcategories that aren't already part of the new
+    // built-in schema, so hand-added categories aren't wiped out.
+    (savedTax.groups||[]).forEach(g => { if(!GROUP_ORDER.includes(g)) GROUP_ORDER.push(g); });
+    Object.keys(savedTax.categories||{}).forEach(g => {
+      if(!CATEGORY_ORDER[g]) CATEGORY_ORDER[g] = [];
+      (savedTax.categories[g]||[]).forEach(c => { if(!CATEGORY_ORDER[g].includes(c)) CATEGORY_ORDER[g].push(c); });
+    });
+    Object.keys(savedTax.subcategories||{}).forEach(c => {
+      if(!SUBCATEGORY_ORDER[c]) SUBCATEGORY_ORDER[c] = [];
+      (savedTax.subcategories[c]||[]).forEach(sc => { if(!SUBCATEGORY_ORDER[c].includes(sc)) SUBCATEGORY_ORDER[c].push(sc); });
+    });
+  }
+  STATE.taxonomy = { version: TAXONOMY_SCHEMA_VERSION, groups: GROUP_ORDER, categories: CATEGORY_ORDER, subcategories: SUBCATEGORY_ORDER };
   saveJSON(LS_KEYS.taxonomy, STATE.taxonomy);
 }
 // Add back any Pokémon you've hand-added that aren't in the built-in dex.
@@ -1376,7 +1411,7 @@ function wireScreenEvents(routeId){
         GROUP_ORDER = JSON.parse(JSON.stringify(DEFAULT_GROUP_ORDER));
         CATEGORY_ORDER = JSON.parse(JSON.stringify(DEFAULT_CATEGORY_ORDER));
         SUBCATEGORY_ORDER = JSON.parse(JSON.stringify(DEFAULT_SUBCATEGORY_ORDER));
-        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{ cloudSync:{enabled:false,syncCode:'',config:null} }, labelOverrides:{}, mergedLabels:{}, categoryOverrides:{}, manualOwned:{}, taxonomy:{ groups:GROUP_ORDER, categories:CATEGORY_ORDER, subcategories:SUBCATEGORY_ORDER }, familyOverrides:{}, customSpecies:[] };
+        STATE = { collection:[], picks:{}, history:[], overrides:{}, settings:{ cloudSync:{enabled:false,syncCode:'',config:null} }, labelOverrides:{}, mergedLabels:{}, categoryOverrides:{}, manualOwned:{}, taxonomy:{ version:TAXONOMY_SCHEMA_VERSION, groups:GROUP_ORDER, categories:CATEGORY_ORDER, subcategories:SUBCATEGORY_ORDER }, familyOverrides:{}, customSpecies:[] };
         Object.keys(LS_KEYS).forEach(k => persist(k));
         rebuildBinder();
         toast('All data erased.');
@@ -2191,7 +2226,7 @@ function combineSelectedLabels(){
    it survives reloads and travels with backup export/restore.
    ============================================================ */
 function saveTaxonomy(){
-  STATE.taxonomy = { groups: GROUP_ORDER, categories: CATEGORY_ORDER, subcategories: SUBCATEGORY_ORDER };
+  STATE.taxonomy = { version: TAXONOMY_SCHEMA_VERSION, groups: GROUP_ORDER, categories: CATEGORY_ORDER, subcategories: SUBCATEGORY_ORDER };
   persist('taxonomy');
 }
 function promptTextModal(title, label, initialValue, onSave){
